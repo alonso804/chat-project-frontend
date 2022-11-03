@@ -4,9 +4,10 @@ import { RiSearchLine } from "react-icons/ri";
 
 interface MenuProps {
   show: boolean;
+  username: string;
 }
 
-const Messages: React.FC<MenuProps> = ({ show }) => {
+const Menu: React.FC<MenuProps> = ({ show, username }) => {
   const [searchUser, setSearchUser] = useState("");
 
   return (
@@ -15,7 +16,7 @@ const Messages: React.FC<MenuProps> = ({ show }) => {
         className={`fixed lg:static lg:col-span-1 bg-[#22222A] p-5 z-50 h-full w-[80%] lg:w-full ease-in-out duration-300
         ${show ? "left-0" : "-left-full"}`}
       >
-        <h1 className="text-white text-3xl mb-4 truncate">Alonso</h1>
+        <h1 className="text-white text-3xl mb-4 truncate">{username}</h1>
         <form>
           <div className="relative">
             <RiSearchLine className="absolute left-2 top-3 text-gray-300" />
@@ -45,4 +46,4 @@ const Messages: React.FC<MenuProps> = ({ show }) => {
   );
 };
 
-export default Messages;
+export default Menu;

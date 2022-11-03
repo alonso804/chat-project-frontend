@@ -3,7 +3,17 @@ import Image from "next/image";
 import { useState } from "react";
 import { MdSend } from "react-icons/md";
 
-const Chat: React.FC = () => {
+interface ChatProps {
+  id: string;
+  receiver: string;
+  messages: {
+    content: string;
+    isSender: boolean;
+    createdAt: Date;
+  }[];
+}
+
+const Chat: React.FC<ChatProps> = ({ id, receiver, messages }) => {
   const [message, setMessage] = useState("");
 
   const handleSendMessage = (event: React.FormEvent<HTMLFormElement>) => {
@@ -24,7 +34,7 @@ const Chat: React.FC = () => {
             unoptimized
             className="rounded-full"
           />
-          <h2 className="text-white text-2xl">Peppa</h2>
+          <h2 className="text-white text-2xl">{receiver}</h2>
         </div>
 
         <div className="p-4 overflow-y-scroll max-h-[calc(100%-165px)] scrollbar">

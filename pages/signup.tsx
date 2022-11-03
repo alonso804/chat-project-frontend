@@ -1,11 +1,14 @@
+import { setCookie } from "cookies-next";
 import { Formik } from "formik";
 import { NextPage } from "next";
+import { useRouter } from "next/router";
 import { useState } from "react";
 import { AuthServices } from "services/AuthServices";
 
 const Login: NextPage = () => {
   const [fail, setFail] = useState({ open: false, message: "" });
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   return (
     <>
@@ -38,21 +41,23 @@ const Login: NextPage = () => {
 
             return errors.password || errors.username ? errors : {};
           }}
-          onSubmit={(values, { setSubmitting }) => {
-            console.log(values);
-            AuthServices.signup(
-              values.username,
-              values.password,
-              values.phoneNumber
-            )
-              .then((response) => {
-                console.log(response);
-              })
-              .catch((error) => {
-                console.log(error);
-              });
+          onSubmit={async (values, { setSubmitting }) => {
+            try {
+              const response = await AuthServices.signup(
+                values.username,
+                values.password,
+                values.phoneNumber
+              );
 
-            setSubmitting(false);
+              setSubmitting(false);
+
+              if (response.status === 200) {
+                setCookie("token", response.data.token);
+                router.push("/");
+              }
+            } catch (error) {
+              console.log(error);
+            }
           }}
         >
           {({

@@ -4,6 +4,7 @@ const nextConfig = {
   swcMinify: true,
   env: {
     API_URI: process.env.API_URI,
+    JWT_SECRET: process.env.JWT_SECRET,
   },
 };
 
