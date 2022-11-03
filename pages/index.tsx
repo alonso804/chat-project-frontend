@@ -9,13 +9,12 @@ const Home: NextPage = () => {
   const [showMenu, setShowMenu] = useState(false);
 
   const toggleMenu = () => {
-    console.log(showMenu);
     setShowMenu(!showMenu);
   };
 
   return (
     <>
-      <main className="h-screen w-screen grid grid-cols-1 lg:grid-cols-4">
+      <main className="h-screen 2xl:h-[95vh] 2xl:max-w-[70%] outline outline-gray-800 mx-auto 2xl:my-12 grid grid-cols-1 lg:grid-cols-4">
         <Messages show={showMenu} />
         <Chat />
 

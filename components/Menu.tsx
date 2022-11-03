@@ -12,10 +12,10 @@ const Messages: React.FC<MenuProps> = ({ show }) => {
   return (
     <>
       <section
-        className={`fixed lg:static lg:col-span-1 bg-[#22222A] p-4 z-50 h-screen
-        ${show && "-left-full"}`}
+        className={`fixed lg:static lg:col-span-1 bg-[#22222A] p-5 z-50 h-full w-[80%] lg:w-full ease-in-out duration-300
+        ${show ? "left-0" : "-left-full"}`}
       >
-        <h1 className="text-white text-3xl mb-4">Juan</h1>
+        <h1 className="text-white text-3xl mb-4 truncate">Alonso</h1>
         <form>
           <div className="relative">
             <RiSearchLine className="absolute left-2 top-3 text-gray-300" />
@@ -30,28 +30,15 @@ const Messages: React.FC<MenuProps> = ({ show }) => {
             />
           </div>
         </form>
-        <div className="mt-4">
-          {/* <a href="#" className="flex justify-items-center w-full gap-2 mb-4">
-            <div className="w-[15%] relative flex items-center justify-center">
-              <div className="w-10 h-10 m-auto flex justify-center items-center bg-red-500 rounded-full relative">
-                U
-              </div>
-            </div>
-            <div className="w-[85%] flex justify-between">
-              <div>
-                <h3 className="text-gray-300 font-semibold">Alon</h3>
-                <p className="text-red-400 bg-yellow-500">Hola</p>
-              </div>
-              <div>
-                <h3 className="text-gray-500">10:30 pm</h3>
-              </div>
-            </div>
-          </a> */}
+
+        <div className="p-2 overflow-y-scroll max-h-[calc(100%-165px)] scrollbar">
           <MessagePreview
-            username={"asdlkasdjlak"}
-            message={"Hola!!!holaholaholaholaHolaaaaaaaaaaa"}
+            username="alonso"
+            message="Hola"
             date={new Date()}
+            selected={true}
           />
+          <MessagePreview username="alonso" message="Hola" date={new Date()} />
         </div>
       </section>
     </>

@@ -13,7 +13,7 @@ const Chat: React.FC = () => {
 
   return (
     <>
-      <section className="lg:col-span-3 bg-[#1E1F24] flex flex-col h-screen">
+      <section className="lg:col-span-3 bg-[#1E1F24] flex flex-col h-full relative">
         <div className="flex flex-row p-2 pl-5 gap-4 items-center bg-[#141517] border-b border-gray-700">
           <Image
             loader={({ src }) => src}
