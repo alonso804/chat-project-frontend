@@ -2,6 +2,7 @@ import axios from "axios";
 import { setCookie } from "cookies-next";
 import { Formik } from "formik";
 import { NextPage } from "next";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { AuthServices } from "services/AuthServices";
@@ -45,10 +46,12 @@ const Login: NextPage = () => {
                 values.password
               );
 
+              const data = await response.json();
+
               setSubmitting(false);
 
               if (response.status === 200) {
-                setCookie("token", response.data.token);
+                setCookie("token", data.token);
                 router.push("/");
               }
             } catch (error) {
@@ -65,7 +68,10 @@ const Login: NextPage = () => {
             handleSubmit,
             isSubmitting,
           }) => (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-6 justify-center justify-items-center"
+            >
               <input
                 type="text"
                 name="username"
@@ -95,6 +101,12 @@ const Login: NextPage = () => {
               >
                 Login
               </button>
+
+              <Link href="/signup">
+                <p className="m-auto text-gray-400 cursor-pointer hover:text-purple-500">
+                  Don&apos;t have an account? Sign up
+                </p>
+              </Link>
             </form>
           )}
         </Formik>

@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
 export async function middleware(req: NextRequest) {
+  if (
+    req.nextUrl.pathname.startsWith("/login") ||
+    req.nextUrl.pathname.startsWith("/signup")
+  ) {
+    return NextResponse.next();
+  }
+
   const jwt = req.cookies.get("token");
 
   if (!jwt) {
@@ -17,5 +24,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/"],
+  matcher: ["/((?!api|_next/static|favicon.ico).*)"],
 };

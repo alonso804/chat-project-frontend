@@ -1,22 +1,35 @@
-import axios from "axios";
-
 const { API_URI } = process.env;
 
 export class AuthServices {
   static async login(username: string, password: string) {
-    return axios.post(`${API_URI}/api/auth/login`, {
-      username,
-      password,
+    return fetch(`${API_URI}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
     });
   }
 
-  static async signup(username: string, password: string, phoneNumber: string) {
-    return axios.post(`${API_URI}/api/auth/signup`, {
-      username,
-      password,
-      phoneNumber,
-      publicKey: "123",
-      privateKey: "123",
+  static async signup(
+    username: string,
+    password: string,
+    phoneNumber: string,
+    publicKey: string,
+    privateKey: string
+  ) {
+    return fetch(`${API_URI}/api/auth/signup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        password,
+        phoneNumber,
+        publicKey,
+        privateKey,
+      }),
     });
   }
 }

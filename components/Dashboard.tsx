@@ -6,16 +6,17 @@ import { useState } from "react";
 import { AiOutlineMenu } from "react-icons/ai";
 import { getCookie } from "cookies-next";
 import { UserServices } from "services/UserServices";
+import { useRouter } from "next/router";
 
 const { API_URI } = process.env;
 
 interface DashboardProps {
   username: string;
-  chat?: any;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ username, chat }) => {
+const Dashboard: React.FC<DashboardProps> = ({ username }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const router = useRouter();
 
   const toggleMenu = () => {
     setShowMenu(!showMenu);
@@ -23,15 +24,9 @@ const Dashboard: React.FC<DashboardProps> = ({ username, chat }) => {
 
   return (
     <>
-      <main className="h-screen 2xl:h-[95vh] 2xl:max-w-[70%] outline outline-gray-800 mx-auto 2xl:my-12 grid grid-cols-1 lg:grid-cols-4">
+      <main className="h-screen 2xl:h-[95vh] 2xl:my-12 outline outline-gray-800 mx-auto grid grid-cols-1 lg:grid-cols-4">
         <Menu show={showMenu} username={username} />
-        {chat && (
-          <Chat
-            id={chat._id}
-            messages={chat.messages}
-            receiver={chat.receiver}
-          />
-        )}
+        {router.query.username && <Chat />}
 
         <button
           onClick={toggleMenu}

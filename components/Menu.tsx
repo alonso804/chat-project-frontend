@@ -1,14 +1,35 @@
 import MessagePreview from "containers/MessagePreview";
-import { useState } from "react";
+import { getCookie } from "cookies-next";
+import { useEffect, useState } from "react";
 import { RiSearchLine } from "react-icons/ri";
+import { UserServices } from "services/UserServices";
 
 interface MenuProps {
   show: boolean;
   username: string;
 }
 
-const Menu: React.FC<MenuProps> = ({ show, username }) => {
+const Menu: React.FC<MenuProps> = ({ show }) => {
   const [searchUser, setSearchUser] = useState("");
+  const [username, setUsername] = useState("");
+
+  const getUSerInfo = async (token: string) => {
+    try {
+      const response = await UserServices.getUserInfo(token);
+      const data = await response.json();
+
+      setUsername(data.username);
+      return data;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    const token = getCookie("token");
+
+    getUSerInfo(token as string);
+  }, []);
 
   return (
     <>

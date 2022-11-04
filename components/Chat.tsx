@@ -1,29 +1,66 @@
 import Message from "containers/Message";
+import { getCookie } from "cookies-next";
 import Image from "next/image";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import { MdSend } from "react-icons/md";
+import { ChatServices } from "services/ChatServices";
 
-interface ChatProps {
-  id: string;
-  receiver: string;
-  messages: {
-    content: string;
-    isSender: boolean;
-    createdAt: Date;
-  }[];
-}
+const Chat: React.FC = () => {
+  const [newMessage, setNewMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [receiver, setReceiver] = useState("");
+  const [chatId, setChatId] = useState();
+  const router = useRouter();
 
-const Chat: React.FC<ChatProps> = ({ id, receiver, messages }) => {
-  const [message, setMessage] = useState("");
+  const getChat = async (token: string) => {
+    try {
+      const response = await ChatServices.getChat(
+        token,
+        router.query.username as string
+      );
 
-  const handleSendMessage = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    console.log(message);
+      if (response.status !== 200) {
+        return;
+      }
+
+      const data = await response.json();
+
+      setChatId(data.id);
+      setMessages(data.messages);
+      setReceiver(data.receiver);
+    } catch (error) {
+      console.log(error);
+    }
   };
+
+  const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const token = getCookie("token");
+
+    try {
+      if (chatId) {
+        await ChatServices.sendMessage(token as string, chatId, newMessage);
+      } else {
+        await ChatServices.createChat(token as string, receiver, newMessage);
+      }
+      await getChat(token as string);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (router.isReady) {
+      const token = getCookie("token");
+      getChat(token as string);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.query.username]);
 
   return (
     <>
-      <section className="lg:col-span-3 bg-[#1E1F24] flex flex-col h-full relative">
+      <section className="lg:col-span-3 bg-[#1E1F24] flex flex-col relative">
         <div className="flex flex-row p-2 pl-5 gap-4 items-center bg-[#141517] border-b border-gray-700">
           <Image
             loader={({ src }) => src}
@@ -37,17 +74,15 @@ const Chat: React.FC<ChatProps> = ({ id, receiver, messages }) => {
           <h2 className="text-white text-2xl">{receiver}</h2>
         </div>
 
-        <div className="p-4 overflow-y-scroll max-h-[calc(100%-165px)] scrollbar">
-          <Message isSender={true} message={"Hola"} date={new Date()} />
-
-          <Message
-            isSender={false}
-            message={
-              "Lorem ipsum corporis nesciunt asperiores ducimus, sunt architecto, hic eveniet officia autem debitis deleniti, dicta nisi maxime est dolorum voluptatum! Sint reiciendis molestiae magni quidem non hic nihil qui corporis, nobis debitis fugit laboriosam dicta veniam, eveniet libero."
-            }
-            date={new Date()}
-          />
-          <Message isSender={true} message={"Hola"} date={new Date()} />
+        <div className="p-4 overflow-y-scroll max-h-[calc(100%-165px)] scrollbar flex flex-col-reverse">
+          {messages.map((message: any, idx) => (
+            <Message
+              key={idx}
+              message={message.content}
+              date={message.createdAt}
+              isSender={message.isSender}
+            />
+          ))}
         </div>
 
         <div className="absolute bg-[#22222A] left-0 bottom-0 w-full p-7 border-t border-gray-700">
@@ -61,8 +96,8 @@ const Chat: React.FC<ChatProps> = ({ id, receiver, messages }) => {
               autoComplete="off"
               className="px-4 py-2 outline-none w-full rounded-full text-white"
               placeholder="Type a message"
-              onChange={(event) => setMessage(event.target.value)}
-              value={message}
+              onChange={(event) => setNewMessage(event.target.value)}
+              value={newMessage}
             />
 
             <button type="submit">
