@@ -1,52 +1,22 @@
 import type { NextPage } from "next";
-import { useState } from "react";
-import { getCookie } from "cookies-next";
-import { UserServices } from "services/UserServices";
 import Dashboard from "components/Dashboard";
-import { ChatServices } from "services/ChatServices";
-import { MdQueryBuilder } from "react-icons/md";
+import { useRouter } from "next/router";
+import Head from "next/head";
 
-interface MainPage {
-  username: string;
-  chat: any;
-}
+interface MainPage {}
 
-// const getUsername = async (token: string) => {
-//   const response = await UserServices.getUserInfo(token);
-//   const data = await response.json();
+const ChatUser: NextPage<MainPage> = () => {
+  const router = useRouter();
 
-//   return data.username;
-// };
-
-// const getChat = async (token: string, username: string) => {
-//   const response = await ChatServices.getChat(token, username);
-//   const data = await response.json();
-
-//   return data.chat;
-// };
-
-// export async function getServerSideProps({ req, query }: any) {
-//   const token = getCookie("token", { req });
-
-//   const username = await getUsername(token as string);
-
-//   const receiverUsername = query.username as string;
-//   const chat = await getChat(token as string, receiverUsername);
-
-//   return {
-//     props: {
-//       username,
-//       chat,
-//     },
-//   };
-// }
-
-const MainPage: NextPage<MainPage> = ({ username }) => {
   return (
     <>
-      <Dashboard username={username} />
+      <Head>
+        <title>{router.query.username} | Chat</title>
+        <meta name="Chat" content="Chat" />
+      </Head>
+      <Dashboard />
     </>
   );
 };
 
-export default MainPage;
+export default ChatUser;

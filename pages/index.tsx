@@ -1,29 +1,17 @@
 import type { NextPage } from "next";
-import { getCookie } from "cookies-next";
-import { UserServices } from "services/UserServices";
 import Dashboard from "components/Dashboard";
+import Head from "next/head";
 
-interface HomeProps {
-  username: string;
-}
+interface HomeProps {}
 
-export async function getServerSideProps({ req }: any) {
-  const token = getCookie("token", { req });
-
-  const response = await UserServices.getUserInfo(token as string);
-  const data = await response.json();
-
-  return {
-    props: {
-      username: data.username,
-    },
-  };
-}
-
-const Home: NextPage<HomeProps> = ({ username }) => {
+const Home: NextPage<HomeProps> = () => {
   return (
     <>
-      <Dashboard username={username} />
+      <Head>
+        <title>Chat</title>
+        <meta name="Chat" content="Chat" />
+      </Head>
+      <Dashboard />
     </>
   );
 };

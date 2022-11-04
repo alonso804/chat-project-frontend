@@ -2,6 +2,7 @@ import axios from "axios";
 import { setCookie } from "cookies-next";
 import { Formik } from "formik";
 import { NextPage } from "next";
+import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -16,7 +17,11 @@ const Login: NextPage = () => {
 
   return (
     <>
-      <main className="bg-[#1E1F24] h-screen 2xl:h-[50vh] 2xl:max-w-[50%] outline outline-gray-800 mx-auto 2xl:my-96 flex flex-col gap-14 justify-center">
+      <Head>
+        <title>Login</title>
+        <meta name="Login" content="Login" />
+      </Head>
+      <main className="bg-[#1E1F24] h-screen 2xl:h-[50vh] 2xl:max-w-[50%] outline outline-gray-800 mx-auto 2xl:my-56 flex flex-col gap-14 justify-center">
         <h1 className="text-white text-5xl text-center">Chat UI</h1>
         <Formik
           initialValues={{

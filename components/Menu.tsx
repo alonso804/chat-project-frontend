@@ -6,12 +6,28 @@ import { UserServices } from "services/UserServices";
 
 interface MenuProps {
   show: boolean;
-  username: string;
 }
 
 const Menu: React.FC<MenuProps> = ({ show }) => {
   const [searchUser, setSearchUser] = useState("");
   const [username, setUsername] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      username: "chanito",
+      message: "Hola",
+      date: new Date(),
+    },
+    {
+      username: "luis",
+      message: "Como estas",
+      date: new Date(),
+    },
+    {
+      username: "fabiola",
+      message: "Hi",
+      date: new Date(),
+    },
+  ]);
 
   const getUSerInfo = async (token: string) => {
     try {
@@ -54,13 +70,14 @@ const Menu: React.FC<MenuProps> = ({ show }) => {
         </form>
 
         <div className="p-2 overflow-y-scroll max-h-[calc(100%-165px)] scrollbar">
-          <MessagePreview
-            username="alonso"
-            message="Hola"
-            date={new Date()}
-            selected={true}
-          />
-          <MessagePreview username="alonso" message="Hola" date={new Date()} />
+          {messages.map((message, idx) => (
+            <MessagePreview
+              key={idx}
+              username={message.username}
+              message={message.message}
+              date={message.date}
+            />
+          ))}
         </div>
       </section>
     </>
