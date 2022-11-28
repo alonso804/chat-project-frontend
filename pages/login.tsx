@@ -26,7 +26,7 @@ const Login: NextPage = () => {
         <Formik
           initialValues={{
             username: "",
-            password: "",
+            password: "Aa1#234567",
           }}
           validate={(values) => {
             const errors = {

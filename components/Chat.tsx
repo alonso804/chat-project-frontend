@@ -4,23 +4,40 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { MdSend } from "react-icons/md";
+import { UserPreview } from "schemas/userPreview.schema";
 import { ChatServices } from "services/ChatServices";
+import { Socket } from "socket.io-client";
 
-const Chat: React.FC = () => {
+interface ChatProps {
+  receiver: UserPreview;
+  socket: Socket;
+}
+
+type CreateChatSocketResponse = {
+  chatId: string;
+  message: {
+    createdAt: string;
+    content: string;
+    isSender: boolean;
+  };
+};
+
+const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
   const [newMessage, setNewMessage] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [receiver, setReceiver] = useState("");
-  const [chatId, setChatId] = useState();
+  const [messages, setMessages] = useState<
+    CreateChatSocketResponse["message"][]
+  >([]);
+  const [chatId, setChatId] = useState<string | undefined>();
   const router = useRouter();
 
   const getChat = async (token: string) => {
     try {
-      const response = await ChatServices.getChat(
-        token,
-        router.query.username as string
-      );
+      const response = await ChatServices.getChat(token, receiver.username);
 
       if (response.status !== 200) {
+        setChatId(undefined);
+        setMessages([]);
+
         return;
       }
 
@@ -28,11 +45,23 @@ const Chat: React.FC = () => {
 
       setChatId(data.id);
       setMessages(data.messages);
-      setReceiver(data.receiver);
     } catch (error) {
       console.log(error);
     }
   };
+
+  useEffect(() => {
+    const createChat = ({ chatId, message }: CreateChatSocketResponse) => {
+      setChatId(chatId);
+      setMessages([...messages, message]);
+    };
+
+    socket.on("newChat", createChat);
+
+    return () => {
+      socket.off("newChat", createChat);
+    };
+  }, [messages, chatId, socket]);
 
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,9 +69,14 @@ const Chat: React.FC = () => {
 
     try {
       if (chatId) {
-        await ChatServices.sendMessage(token as string, chatId, newMessage);
+        socket.emit("sendMessage", { chatId, message: newMessage });
+        // await ChatServices.sendMessage(token as string, chatId, newMessage);
       } else {
-        await ChatServices.createChat(token as string, receiver, newMessage);
+        socket.emit("createChat", {
+          receiverId: receiver._id,
+          message: newMessage,
+        });
+        // await ChatServices.createChat(token as string, receiver, newMessage);
       }
       await getChat(token as string);
     } catch (error) {
@@ -64,14 +98,14 @@ const Chat: React.FC = () => {
         <div className="flex flex-row p-2 pl-5 gap-4 items-center bg-[#141517] border-b border-gray-700">
           <Image
             loader={({ src }) => src}
-            src="https://pps.whatsapp.net/v/t61.24694-24/294877915_115185511154245_8899329756680350085_n.jpg?stp=dst-jpg_s96x96&ccb=11-4&oh=01_AdTt2uUw2vRwyn3ycSs26ZfeqLWDrd59BDt8lOkJ4-ODlQ&oe=636E59EB"
+            src="https://cdn.pixabay.com/photo/2021/02/12/13/43/among-us-6008615__340.png"
             alt="Profile Picture"
             width={50}
             height={50}
             unoptimized
             className="rounded-full"
           />
-          <h2 className="text-white text-2xl">{receiver}</h2>
+          <h2 className="text-white text-2xl">{receiver.username}</h2>
         </div>
 
         <div className="p-4 overflow-y-scroll max-h-[calc(100%-165px)] scrollbar flex flex-col-reverse">
