@@ -1,5 +1,7 @@
+import { UserPreview } from "./userPreview.schema";
+
 export type ChatPreview = {
-  username: string;
+  receiver: UserPreview;
   message: string;
   date: Date;
 };

@@ -40,7 +40,12 @@ const Home: NextPage<HomeProps> = ({ token, chats, userInfo }) => {
   const socket = io("http://localhost:8080", {
     autoConnect: false,
     query: { token },
-    auth: { userId: userInfo.id },
+    auth: {
+      user: {
+        _id: userInfo.id,
+        username: userInfo.username,
+      },
+    },
   });
 
   socket.connect();
@@ -95,7 +100,13 @@ const Home: NextPage<HomeProps> = ({ token, chats, userInfo }) => {
         <meta name="Chat" content="Chat" />
       </Head>
       <main className="h-screen 2xl:h-[95vh] 2xl:my-6 outline outline-gray-800 mx-auto grid grid-cols-1 lg:grid-cols-4">
-        <Menu show={showMenu} chats={chats} username={userInfo.username} />
+        <Menu
+          show={showMenu}
+          chats={chats}
+          username={userInfo.username}
+          setReceiver={(receiver: UserPreview) => setReceiver(receiver)}
+          socket={socket}
+        />
         {receiver && <Chat receiver={receiver} socket={socket} />}
 
         <button

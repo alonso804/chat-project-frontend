@@ -84,6 +84,7 @@ const UsersModal: React.FC<DashboardProps> = ({
                   placeholder="username"
                   onChange={searchUsersByInput}
                   value={term}
+                  autoFocus
                 />
               </div>
             </form>

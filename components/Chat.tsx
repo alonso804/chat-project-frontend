@@ -30,7 +30,9 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
   const [chatId, setChatId] = useState<string | undefined>();
   const router = useRouter();
 
-  const getChat = async (token: string) => {
+  const getChat = async () => {
+    const token = getCookie("token") as string;
+
     try {
       const response = await ChatServices.getChat(token, receiver.username);
 
@@ -53,7 +55,7 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
   useEffect(() => {
     const createChat = ({ chatId, message }: CreateChatSocketResponse) => {
       setChatId(chatId);
-      setMessages([...messages, message]);
+      setMessages([message, ...messages]);
     };
 
     socket.on("newChat", createChat);
@@ -63,22 +65,39 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
     };
   }, [messages, chatId, socket]);
 
+  useEffect(() => {
+    const sendMessage = ({ chatId, message }: CreateChatSocketResponse) => {
+      setChatId(chatId);
+      setMessages([message, ...messages]);
+    };
+
+    socket.on("sendMessage", sendMessage);
+
+    return () => {
+      socket.off("sendMessage", sendMessage);
+    };
+  }, [messages, chatId, socket]);
+
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const token = getCookie("token");
 
     try {
       if (chatId) {
-        socket.emit("sendMessage", { chatId, message: newMessage });
+        socket.emit("sendMessage", {
+          chatId,
+          message: newMessage,
+          receiver,
+        });
         // await ChatServices.sendMessage(token as string, chatId, newMessage);
       } else {
         socket.emit("createChat", {
-          receiverId: receiver._id,
+          receiver,
           message: newMessage,
         });
         // await ChatServices.createChat(token as string, receiver, newMessage);
       }
-      await getChat(token as string);
+      setNewMessage("");
+      // await getChat();
     } catch (error) {
       console.log(error);
     }
@@ -86,11 +105,10 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
 
   useEffect(() => {
     if (router.isReady) {
-      const token = getCookie("token");
-      getChat(token as string);
+      getChat();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.isReady, router.query.username]);
+  }, [router.isReady, router.query.username, receiver]);
 
   return (
     <>
@@ -132,6 +150,7 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
               placeholder="Type a message"
               onChange={(event) => setNewMessage(event.target.value)}
               value={newMessage}
+              autoFocus
             />
 
             <button type="submit">
