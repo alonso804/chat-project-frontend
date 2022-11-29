@@ -96,7 +96,6 @@ const Menu: React.FC<MenuProps> = ({
   useEffect(() => {
     const newLastMessage = async (message: NewLastMessageResponse) => {
       try {
-        console.log(message.receiver);
         const derivedKey = await getDeriveKey(
           JSON.parse(message.receiver.publicKey),
           JSON.parse(privateKey)

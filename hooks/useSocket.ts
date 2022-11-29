@@ -3,9 +3,6 @@ import { Socket } from "socket.io-client";
 import io from "socket.io-client";
 
 export const useSocket = (uri: string, token: string, userInfo: any) => {
-  console.log(uri);
-  console.log(token);
-  console.log(userInfo);
   const [socket, setSocket] = useState<Socket>();
 
   useEffect(() => {
@@ -15,11 +12,11 @@ export const useSocket = (uri: string, token: string, userInfo: any) => {
         user: {
           _id: userInfo.id,
           username: userInfo.username,
+          publicKey: userInfo.publicKey,
         },
       },
     });
 
-    console.log(socketIo);
     setSocket(socketIo);
 
     return () => {
