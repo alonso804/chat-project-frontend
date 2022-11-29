@@ -38,14 +38,17 @@ export const derivationBasedOnSecret = async (
   );
 };
 
-export const encryptAesCbc = async (text: string) => {
+export const encryptAesCbc = async (
+  text: string,
+  secret = process.env.PRIVATE_KEY_SECRET as string
+) => {
   const encoder = new TextEncoder();
   const sal = window.crypto.getRandomValues(new Uint8Array(SAL_LENGTH));
   const iv = window.crypto.getRandomValues(new Uint8Array(IV_LENGTH));
   const bufferText = encoder.encode(text);
 
   const key = await derivationBasedOnSecret(
-    process.env.PRIVATE_KEY_SECRET as string,
+    secret,
     sal,
     100000,
     256,
@@ -64,14 +67,17 @@ export const encryptAesCbc = async (text: string) => {
   return bufferToBase64([...sal, ...iv, ...new Uint8Array(encrypted)]);
 };
 
-export const decryptAesCbc = async (text: string) => {
+export const decryptAesCbc = async (
+  text: string,
+  secret = process.env.PRIVATE_KEY_SECRET as string
+) => {
   const decoder = new TextDecoder();
   const bufferText = base64ABuffer(text);
   const sal = bufferText.slice(0, SAL_LENGTH);
   const iv = bufferText.slice(SAL_LENGTH, SAL_LENGTH + IV_LENGTH);
 
   const key = await derivationBasedOnSecret(
-    process.env.PRIVATE_KEY_SECRET as string,
+    secret,
     sal,
     100000,
     256,

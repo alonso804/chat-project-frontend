@@ -6,7 +6,6 @@ import { MdSend } from "react-icons/md";
 import { UserPreview } from "schemas/userPreview.schema";
 import { ChatServices } from "services/ChatServices";
 import { Socket } from "socket.io-client";
-import { userTable } from "utils/indexedDb";
 import {
   decryptAesCbc,
   decryptAesGcm,
@@ -63,6 +62,7 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket, privateKey }) => {
       }
     };
 
+    console.log("Creating chat socket");
     socket.on("newChat", createChat);
 
     return () => {
@@ -96,6 +96,7 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket, privateKey }) => {
       }
     };
 
+    console.log("Sending message socket");
     socket.on("sendMessage", sendMessage);
 
     return () => {

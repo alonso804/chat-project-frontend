@@ -14,9 +14,9 @@ export class AuthServices {
   static async signup(
     username: string,
     password: string,
-    phoneNumber: string,
     publicKey: string,
-    privateKey: string
+    privateKey: string,
+    googleAuthSecret: string
   ) {
     return fetch(`${API_URI}/api/auth/signup`, {
       method: "POST",
@@ -26,9 +26,9 @@ export class AuthServices {
       body: JSON.stringify({
         username,
         password,
-        phoneNumber,
         publicKey,
         privateKey,
+        googleAuthSecret,
       }),
     });
   }

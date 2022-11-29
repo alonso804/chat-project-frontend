@@ -1,6 +1,6 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import io from "socket.io-client";
+import io, { Socket } from "socket.io-client";
 import { UserServices } from "services/UserServices";
 import { ChatPreview } from "schemas/chatPreview.schema";
 import { useEffect, useState } from "react";
@@ -11,8 +11,9 @@ import { AiOutlineMenu } from "react-icons/ai";
 import { useRouter } from "next/router";
 import { deleteCookie } from "cookies-next";
 import { UserPreview } from "schemas/userPreview.schema";
-import db, { userTable } from "utils/indexedDb";
+import { userTable } from "utils/indexedDb";
 import { decryptAesCbc } from "utils/crypto";
+import { useSocket } from "hooks/useSocket";
 
 interface HomeProps {
   token: string;
@@ -23,6 +24,7 @@ interface HomeProps {
     publicKey: string;
     privateKey: string;
   };
+  socket: Socket;
 }
 
 export async function getServerSideProps(context: any) {
@@ -41,33 +43,24 @@ export async function getServerSideProps(context: any) {
 }
 
 const Home: NextPage<HomeProps> = ({ token, chats, userInfo }) => {
-  const socket = io("http://localhost:8080", {
-    autoConnect: false,
-    query: { token },
-    auth: {
-      user: {
-        _id: userInfo.id,
-        username: userInfo.username,
-      },
-    },
-  });
-
   const router = useRouter();
+  const socket = useSocket("http://localhost:8080", token, userInfo);
+
   const [receiver, setReceiver] = useState<UserPreview>();
   const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [privateKey, setPrivateKey] = useState<string>("");
 
-  socket.connect();
-
-  socket.on("connect_error", (error) => {
-    console.error(error);
-    if (error.message.toLowerCase() === "invalid token") {
-      deleteCookie("token");
-      userTable.clear();
-      router.push("/login");
-    }
-  });
+  if (socket) {
+    socket.on("connect_error", (error) => {
+      console.error(error);
+      if (error.message.toLowerCase() === "invalid token") {
+        deleteCookie("token");
+        userTable.clear();
+        router.push("/login");
+      }
+    });
+  }
 
   useEffect(() => {
     const decryptPrivateKey = async () => {

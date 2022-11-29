@@ -57,10 +57,12 @@ const Menu: React.FC<MenuProps> = ({
   }, [chats, privateKey]);
 
   useEffect(() => {
-    const updateAllChats = async ({ messages }: UpdateAllChatsResponse) => {
+    const updateAllChats = async ({
+      messages: socketMessages,
+    }: UpdateAllChatsResponse) => {
       try {
         const decryptedMessages = await Promise.all(
-          messages.map(async (message) => {
+          socketMessages.map(async (message) => {
             const derivedKey = await getDeriveKey(
               JSON.parse(message.receiver.publicKey),
               JSON.parse(privateKey)
@@ -79,16 +81,22 @@ const Menu: React.FC<MenuProps> = ({
       }
     };
 
-    socket.on("updateAllChats", updateAllChats);
+    console.log("Updating all chats");
+    if (socket) {
+      socket.on("updateAllChats", updateAllChats);
+    }
 
     return () => {
-      socket.off("updateAllChats", updateAllChats);
+      if (socket) {
+        socket.off("updateAllChats", updateAllChats);
+      }
     };
   }, [messages, socket, privateKey]);
 
   useEffect(() => {
     const newLastMessage = async (message: NewLastMessageResponse) => {
       try {
+        console.log(message.receiver);
         const derivedKey = await getDeriveKey(
           JSON.parse(message.receiver.publicKey),
           JSON.parse(privateKey)
@@ -105,10 +113,15 @@ const Menu: React.FC<MenuProps> = ({
       }
     };
 
-    socket.on("newLastMessage", newLastMessage);
+    console.log("New last message");
+    if (socket) {
+      socket.on("newLastMessage", newLastMessage);
+    }
 
     return () => {
-      socket.off("newLastMessage", newLastMessage);
+      if (socket) {
+        socket.off("newLastMessage", newLastMessage);
+      }
     };
   }, [messages, socket, privateKey]);
 
