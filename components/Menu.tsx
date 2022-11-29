@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ChatPreview } from "schemas/chatPreview.schema";
 import { UserPreview } from "schemas/userPreview.schema";
 import { Socket } from "socket.io-client";
+import { decryptAesCbc, decryptAesGcm, getDeriveKey } from "utils/crypto";
 
 interface MenuProps {
   show: boolean;
@@ -10,6 +11,7 @@ interface MenuProps {
   username: string;
   setReceiver: (receiver: UserPreview) => void;
   socket: Socket;
+  privateKey: string;
 }
 
 type UpdateAllChatsResponse = {
@@ -24,12 +26,57 @@ const Menu: React.FC<MenuProps> = ({
   username,
   setReceiver,
   socket,
+  privateKey,
 }) => {
-  const [messages, setMessages] = useState(chats);
+  const [messages, setMessages] = useState<ChatPreview[]>();
 
   useEffect(() => {
-    const updateAllChats = ({ messages }: UpdateAllChatsResponse) => {
-      setMessages(messages);
+    const getAllChats = async () => {
+      try {
+        const decryptedMessages = await Promise.all(
+          chats.map(async (message) => {
+            const derivedKey = await getDeriveKey(
+              JSON.parse(message.receiver.publicKey),
+              JSON.parse(privateKey)
+            );
+
+            return {
+              ...message,
+              message: await decryptAesGcm(message.message, derivedKey),
+            };
+          })
+        );
+
+        setMessages(decryptedMessages);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    getAllChats();
+  }, [chats, privateKey]);
+
+  useEffect(() => {
+    const updateAllChats = async ({ messages }: UpdateAllChatsResponse) => {
+      try {
+        const decryptedMessages = await Promise.all(
+          messages.map(async (message) => {
+            const derivedKey = await getDeriveKey(
+              JSON.parse(message.receiver.publicKey),
+              JSON.parse(privateKey)
+            );
+
+            return {
+              ...message,
+              message: await decryptAesGcm(message.message, derivedKey),
+            };
+          })
+        );
+
+        setMessages(decryptedMessages);
+      } catch (error) {
+        console.error(error);
+      }
     };
 
     socket.on("updateAllChats", updateAllChats);
@@ -37,11 +84,25 @@ const Menu: React.FC<MenuProps> = ({
     return () => {
       socket.off("updateAllChats", updateAllChats);
     };
-  }, [messages, socket]);
+  }, [messages, socket, privateKey]);
 
   useEffect(() => {
-    const newLastMessage = (message: NewLastMessageResponse) => {
-      setMessages([message, ...messages]);
+    const newLastMessage = async (message: NewLastMessageResponse) => {
+      try {
+        const derivedKey = await getDeriveKey(
+          JSON.parse(message.receiver.publicKey),
+          JSON.parse(privateKey)
+        );
+
+        const decryptedMessage = {
+          ...message,
+          message: await decryptAesGcm(message.message, derivedKey),
+        };
+
+        setMessages([decryptedMessage, ...(messages as ChatPreview[])]);
+      } catch (error) {
+        console.error(error);
+      }
     };
 
     socket.on("newLastMessage", newLastMessage);
@@ -49,7 +110,7 @@ const Menu: React.FC<MenuProps> = ({
     return () => {
       socket.off("newLastMessage", newLastMessage);
     };
-  }, [messages, socket]);
+  }, [messages, socket, privateKey]);
 
   return (
     <>

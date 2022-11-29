@@ -1,5 +1,6 @@
 import moment from "moment";
 import { DATE_FORMAT } from "utils/constants";
+import { decryptAesGcm } from "utils/crypto";
 
 interface MessageProps {
   isSender: boolean;

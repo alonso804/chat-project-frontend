@@ -1,4 +1,4 @@
-import { setCookie } from "cookies-next";
+import { deleteCookie, setCookie } from "cookies-next";
 import { Formik } from "formik";
 import { NextPage } from "next";
 import Head from "next/head";
@@ -6,94 +6,17 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { AuthServices } from "services/AuthServices";
+import { MIN_USERNAME_LENGTH, PASSWORD_REGEX } from "utils/constants";
+import { generateKeys } from "utils/crypto";
+import { userTable } from "utils/indexedDb";
 
 const Signup: NextPage = () => {
-  const [fail, setFail] = useState({ open: false, message: "" });
+  const [failMessage, setFailMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const generateKeys = async () => {
-    const keyPair = await window.crypto.subtle.generateKey(
-      {
-        name: "ECDH",
-        namedCurve: "P-256",
-      },
-      true,
-      ["deriveKey", "deriveBits"]
-    );
-    const publicKeyJwk = await window.crypto.subtle.exportKey(
-      "jwk",
-      keyPair.publicKey
-    );
-    const privateKeyJwk = await window.crypto.subtle.exportKey(
-      "jwk",
-      keyPair.privateKey
-    );
-
-    return { publicKeyJwk, privateKeyJwk };
-  };
-
-  // const bufferABase64 = (buffer: any) =>
-  //   btoa(String.fromCharCode(...new Uint8Array(buffer)));
-
-  // const base64ABuffer = (buffer: any) =>
-  //   Uint8Array.from(atob(buffer), (c) => c.charCodeAt(0));
-
-  // const derivationBasedOnSecret = async (
-  //   secret: string,
-  //   sal: Uint8Array,
-  //   iteraciones: number,
-  //   longitud: number,
-  //   hash: string,
-  //   algoritmo = "AES-CBC"
-  // ) => {
-  //   const encoder = new TextEncoder();
-  //   let keyMaterial = await window.crypto.subtle.importKey(
-  //     "raw",
-  //     encoder.encode(secret),
-  //     { name: "PBKDF2" },
-  //     false,
-  //     ["deriveKey"]
-  //   );
-  //   return await window.crypto.subtle.deriveKey(
-  //     {
-  //       name: "PBKDF2",
-  //       salt: encoder.encode(String(sal)),
-  //       iterations: iteraciones,
-  //       hash,
-  //     },
-  //     keyMaterial,
-  //     { name: algoritmo, length: longitud },
-  //     false,
-  //     ["encrypt", "decrypt"]
-  //   );
-  // };
-
-  // const encrypt = async (secret: string, text: string) => {
-  //   const encoder = new TextEncoder();
-  //   const sal = window.crypto.getRandomValues(new Uint8Array(16));
-  //   const vectorInicializacion = window.crypto.getRandomValues(
-  //     new Uint8Array(16)
-  //   );
-  //   const bufferTextoPlano = encoder.encode(text);
-  //   const clave = await derivationBasedOnSecret(
-  //     secret,
-  //     sal,
-  //     100000,
-  //     256,
-  //     "SHA-256"
-  //   );
-  //   const encrypted = await window.crypto.subtle.encrypt(
-  //     { name: "AES-CBC", iv: vectorInicializacion },
-  //     clave,
-  //     bufferTextoPlano
-  //   );
-  //   return bufferABase64([
-  //     ...sal,
-  //     ...vectorInicializacion,
-  //     ...new Uint8Array(encrypted),
-  //   ]);
-  // };
+  userTable.clear();
+  deleteCookie("token");
 
   return (
     <>
@@ -105,9 +28,9 @@ const Signup: NextPage = () => {
         <h1 className="text-white text-5xl text-center">Chat UI</h1>
         <Formik
           initialValues={{
-            username: "",
-            password: "",
-            phoneNumber: "",
+            username: "a",
+            password: "Aa1#234567",
+            phoneNumber: "946248021",
           }}
           validate={(values) => {
             const errors = {
@@ -120,8 +43,17 @@ const Signup: NextPage = () => {
               errors.username = "Username is required";
             }
 
+            if (values.username.length < MIN_USERNAME_LENGTH) {
+              errors.username = "Username must be at least 3 characters";
+            }
+
             if (!values.password) {
               errors.password = "Password is required";
+            }
+
+            if (!PASSWORD_REGEX.test(values.password)) {
+              errors.password =
+                "Password must contain at least 1 uppercase, 1 lowercase, 1 number and 1 special character";
             }
 
             if (!values.phoneNumber) {
@@ -132,15 +64,15 @@ const Signup: NextPage = () => {
           }}
           onSubmit={async (values, { setSubmitting }) => {
             try {
-              const { publicKeyJwk, privateKeyJwk } = await generateKeys();
-              console.log(privateKeyJwk);
+              const { publicKeyJwk, encryptedPrivateKey } =
+                await generateKeys();
 
               const response = await AuthServices.signup(
                 values.username,
                 values.password,
                 values.phoneNumber,
                 JSON.stringify(publicKeyJwk),
-                "123"
+                encryptedPrivateKey
               );
 
               const data = await response.json();
@@ -150,6 +82,8 @@ const Signup: NextPage = () => {
               if (response.status === 200) {
                 setCookie("token", data.token);
                 router.push("/");
+              } else {
+                setFailMessage(data.message);
               }
             } catch (error) {
               console.log(error);
@@ -166,38 +100,59 @@ const Signup: NextPage = () => {
             isSubmitting,
           }) => (
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                autoComplete="off"
-                onChange={handleChange}
-                onBlur={handleBlur}
-                value={values.username}
-                autoFocus
-                className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400"
-              />
+              <div className="m-auto">
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username"
+                  autoComplete="off"
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.username}
+                  autoFocus
+                  className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400"
+                />
+                {errors.username && touched.username && (
+                  <p className="text-red-500 text-center pt-3">
+                    {errors.username}
+                  </p>
+                )}
+              </div>
 
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                onChange={handleChange}
-                onBlur={handleBlur}
-                value={values.password}
-                className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400 "
-              />
+              <div className="m-auto">
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password"
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.password}
+                  className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400 "
+                />
+                {errors.password && touched.password && (
+                  <p className="text-red-500 text-center pt-3">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
 
-              <input
-                type="text"
-                name="phoneNumber"
-                placeholder="Phone Number"
-                onChange={handleChange}
-                onBlur={handleBlur}
-                autoComplete="off"
-                value={values.phoneNumber}
-                className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400 "
-              />
+              <div className="m-auto">
+                <input
+                  type="text"
+                  name="phoneNumber"
+                  placeholder="Phone Number"
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  autoComplete="off"
+                  value={values.phoneNumber}
+                  className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400 "
+                />
+                {errors.phoneNumber && touched.phoneNumber && (
+                  <p className="text-red-500 text-center pt-3">
+                    {errors.phoneNumber}
+                  </p>
+                )}
+              </div>
 
               <button
                 type="submit"
@@ -206,6 +161,9 @@ const Signup: NextPage = () => {
               >
                 Sign up
               </button>
+              {failMessage && (
+                <p className="text-red-500 text-center">{failMessage}</p>
+              )}
 
               <Link href="/login">
                 <p className="m-auto text-gray-400 cursor-pointer hover:text-purple-500">

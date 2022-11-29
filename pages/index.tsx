@@ -9,8 +9,10 @@ import Menu from "components/Menu";
 import UsersModal from "components/UsersModal";
 import { AiOutlineMenu } from "react-icons/ai";
 import { useRouter } from "next/router";
-import { getCookie, deleteCookie } from "cookies-next";
+import { deleteCookie } from "cookies-next";
 import { UserPreview } from "schemas/userPreview.schema";
+import db, { userTable } from "utils/indexedDb";
+import { decryptAesCbc } from "utils/crypto";
 
 interface HomeProps {
   token: string;
@@ -18,6 +20,8 @@ interface HomeProps {
   userInfo: {
     id: string;
     username: string;
+    publicKey: string;
+    privateKey: string;
   };
 }
 
@@ -47,7 +51,12 @@ const Home: NextPage<HomeProps> = ({ token, chats, userInfo }) => {
       },
     },
   });
+
   const router = useRouter();
+  const [receiver, setReceiver] = useState<UserPreview>();
+  const [showMenu, setShowMenu] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [privateKey, setPrivateKey] = useState<string>("");
 
   socket.connect();
 
@@ -55,18 +64,30 @@ const Home: NextPage<HomeProps> = ({ token, chats, userInfo }) => {
     console.error(error);
     if (error.message.toLowerCase() === "invalid token") {
       deleteCookie("token");
+      userTable.clear();
       router.push("/login");
     }
   });
 
-  const [receiver, setReceiver] = useState<UserPreview>();
-  const [showMenu, setShowMenu] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  useEffect(() => {
+    const decryptPrivateKey = async () => {
+      try {
+        const decriptedPrivateKey = await decryptAesCbc(userInfo.privateKey);
+        setPrivateKey(decriptedPrivateKey);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-  const onKeyDownLogout = async (event: any) => {
+    userTable.put(userInfo);
+    decryptPrivateKey();
+  }, [userInfo]);
+
+  const onKeyDownLogout = (event: any) => {
     if (event.ctrlKey && event.key === "q") {
       socket.disconnect();
       deleteCookie("token");
+      userTable.clear();
       router.push("/login");
     }
   };
@@ -110,8 +131,11 @@ const Home: NextPage<HomeProps> = ({ token, chats, userInfo }) => {
           username={userInfo.username}
           setReceiver={(receiver: UserPreview) => setReceiver(receiver)}
           socket={socket}
+          privateKey={privateKey}
         />
-        {receiver && <Chat receiver={receiver} socket={socket} />}
+        {receiver && (
+          <Chat receiver={receiver} socket={socket} privateKey={privateKey} />
+        )}
 
         <button
           onClick={toggleMenu}

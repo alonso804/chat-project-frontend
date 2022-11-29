@@ -6,10 +6,18 @@ import { MdSend } from "react-icons/md";
 import { UserPreview } from "schemas/userPreview.schema";
 import { ChatServices } from "services/ChatServices";
 import { Socket } from "socket.io-client";
+import { userTable } from "utils/indexedDb";
+import {
+  decryptAesCbc,
+  decryptAesGcm,
+  encryptAesGcm,
+  getDeriveKey,
+} from "utils/crypto";
 
 interface ChatProps {
   receiver: UserPreview;
   socket: Socket;
+  privateKey: string;
 }
 
 type CreateChatSocketResponse = {
@@ -21,7 +29,8 @@ type CreateChatSocketResponse = {
   };
 };
 
-const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
+const Chat: React.FC<ChatProps> = ({ receiver, socket, privateKey }) => {
+  const [deriveKey, setDeriveKey] = useState<CryptoKey>();
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<
     CreateChatSocketResponse["message"][]
@@ -29,18 +38,28 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
   const [chatId, setChatId] = useState<string | undefined>();
 
   useEffect(() => {
-    const createChat = ({
+    const createChat = async ({
       chatId: serverChatId,
       message,
     }: CreateChatSocketResponse) => {
-      console.group("createChat");
-      console.log(`chatId: ${chatId}`);
-      console.log(`serverChatId: ${serverChatId}`);
-      console.log(`message: ${message}`);
-      console.groupEnd();
-      if (!chatId || chatId === serverChatId) {
-        setChatId(serverChatId);
-        setMessages([message, ...messages]);
+      try {
+        console.group("createChat");
+        console.log(`chatId: ${chatId}`);
+        console.log(`serverChatId: ${serverChatId}`);
+        console.log(`message: ${message}`);
+        console.groupEnd();
+
+        if (!chatId || chatId === serverChatId) {
+          const decriptedMessage = {
+            ...message,
+            content: await decryptAesGcm(message.content, deriveKey!),
+          };
+
+          setChatId(serverChatId);
+          setMessages([decriptedMessage, ...messages]);
+        }
+      } catch (error) {
+        console.error(error);
       }
     };
 
@@ -49,21 +68,31 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
     return () => {
       socket.off("newChat", createChat);
     };
-  }, [messages, chatId, socket]);
+  }, [messages, chatId, socket, deriveKey]);
 
   useEffect(() => {
-    const sendMessage = ({
+    const sendMessage = async ({
       chatId: serverChatId,
       message,
     }: CreateChatSocketResponse) => {
-      console.group("sendMessage");
-      console.log(`chatId: ${chatId}`);
-      console.log(`serverChatId: ${serverChatId}`);
-      console.log(`message: ${message}`);
-      console.groupEnd();
-      if (chatId === serverChatId) {
-        setChatId(serverChatId);
-        setMessages([message, ...messages]);
+      try {
+        console.group("sendMessage");
+        console.log(`chatId: ${chatId}`);
+        console.log(`serverChatId: ${serverChatId}`);
+        console.log(`message: ${message}`);
+        console.groupEnd();
+
+        if (chatId === serverChatId) {
+          const decriptedMessage = {
+            ...message,
+            content: await decryptAesGcm(message.content, deriveKey!),
+          };
+
+          setChatId(serverChatId);
+          setMessages([decriptedMessage, ...messages]);
+        }
+      } catch (error) {
+        console.error(error);
       }
     };
 
@@ -72,22 +101,26 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
     return () => {
       socket.off("sendMessage", sendMessage);
     };
-  }, [messages, chatId, socket]);
+  }, [messages, chatId, socket, deriveKey]);
 
   const handleSendMessage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
+      const encryptedMessage = await encryptAesGcm(newMessage, deriveKey!);
+
+      console.log(`Sending message: ${encryptedMessage}`);
+
       if (chatId) {
         socket.emit("sendMessage", {
           chatId,
-          message: newMessage,
+          message: encryptedMessage,
           receiver,
         });
       } else {
         socket.emit("createChat", {
           receiver,
-          message: newMessage,
+          message: encryptedMessage,
         });
       }
       setNewMessage("");
@@ -95,6 +128,23 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
       console.log(error);
     }
   };
+
+  useEffect(() => {
+    const getChatDeriveKey = async () => {
+      try {
+        const deriveKeyCrypto = await getDeriveKey(
+          JSON.parse(receiver.publicKey),
+          JSON.parse(privateKey)
+        );
+
+        setDeriveKey(deriveKeyCrypto);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    getChatDeriveKey();
+  }, [receiver, privateKey]);
 
   useEffect(() => {
     const getChat = async () => {
@@ -113,14 +163,30 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
         const data = await response.json();
 
         setChatId(data.id);
-        setMessages(data.messages);
+
+        const decriptedMessages = await Promise.all(
+          data.messages.map(
+            async (message: CreateChatSocketResponse["message"]) => {
+              const decriptedMessage = await decryptAesGcm(
+                message.content,
+                deriveKey!
+              );
+
+              return {
+                ...message,
+                content: decriptedMessage,
+              };
+            }
+          )
+        );
+        setMessages(decriptedMessages);
       } catch (error) {
         console.log(error);
       }
     };
 
     getChat();
-  }, [receiver]);
+  }, [deriveKey, receiver]);
 
   return (
     <>

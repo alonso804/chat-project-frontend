@@ -1,4 +1,3 @@
-import axios from "axios";
 import { setCookie } from "cookies-next";
 import { Formik } from "formik";
 import { NextPage } from "next";
@@ -7,13 +6,15 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { AuthServices } from "services/AuthServices";
-
-const { API_URI } = process.env;
+import { userTable } from "utils/indexedDb";
+import { deleteCookie } from "cookies-next";
 
 const Login: NextPage = () => {
-  const [fail, setFail] = useState({ open: false, message: "" });
-  const [loading, setLoading] = useState(false);
+  const [failMessage, setFailMessage] = useState("");
   const router = useRouter();
+
+  userTable.clear();
+  deleteCookie("token");
 
   return (
     <>
@@ -58,6 +59,8 @@ const Login: NextPage = () => {
               if (response.status === 200) {
                 setCookie("token", data.token);
                 router.push("/");
+              } else {
+                setFailMessage(data.message);
               }
             } catch (error) {
               console.log(error);
@@ -77,27 +80,41 @@ const Login: NextPage = () => {
               onSubmit={handleSubmit}
               className="flex flex-col gap-6 justify-center justify-items-center"
             >
-              <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                autoComplete="off"
-                value={values.username}
-                autoFocus
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400"
-              />
+              <div className="m-auto">
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username"
+                  autoComplete="off"
+                  value={values.username}
+                  autoFocus
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400"
+                />
+                {errors.username && touched.username && (
+                  <p className="text-red-500 text-center pt-3">
+                    {errors.username}
+                  </p>
+                )}
+              </div>
 
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                onChange={handleChange}
-                onBlur={handleBlur}
-                value={values.password}
-                className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400 "
-              />
+              <div className="m-auto">
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="Password"
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  value={values.password}
+                  className="bg-transparent m-auto text-white p-2 rounded-full text-center border border-white focus:border-purple-400 outline-none placeholder-gray-400 "
+                />
+                {errors.password && touched.password && (
+                  <p className="text-red-500 text-center pt-3">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
 
               <button
                 type="submit"
@@ -106,6 +123,9 @@ const Login: NextPage = () => {
               >
                 Login
               </button>
+              {failMessage && (
+                <p className="text-red-500 text-center">{failMessage}</p>
+              )}
 
               <Link href="/signup">
                 <p className="m-auto text-gray-400 cursor-pointer hover:text-purple-500">
