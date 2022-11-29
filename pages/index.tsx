@@ -47,17 +47,21 @@ const Home: NextPage<HomeProps> = ({ token, chats, userInfo }) => {
       },
     },
   });
+  const router = useRouter();
 
   socket.connect();
 
   socket.on("connect_error", (error) => {
     console.error(error);
+    if (error.message.toLowerCase() === "invalid token") {
+      deleteCookie("token");
+      router.push("/login");
+    }
   });
 
   const [receiver, setReceiver] = useState<UserPreview>();
   const [showMenu, setShowMenu] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const router = useRouter();
 
   const onKeyDownLogout = async (event: any) => {
     if (event.ctrlKey && event.key === "q") {

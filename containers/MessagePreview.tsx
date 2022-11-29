@@ -8,7 +8,6 @@ interface MessagePreviewProps {
   message: string;
   date: Date;
   selected?: boolean;
-  onClick: (receiver: UserPreview) => void;
 }
 
 const MessagePreview = ({
@@ -16,14 +15,12 @@ const MessagePreview = ({
   message,
   date,
   selected = false,
-  onClick,
 }: MessagePreviewProps) => {
   return (
     <div
       className={`flex justify-between w-full mt-4 ${
         selected ? "border-l-2 pl-4" : "pl-5"
       }`}
-      onClick={() => onClick(receiver)}
     >
       <div className=" w-[70%]">
         <h3 className="font-semibold truncate">{receiver.username}</h3>

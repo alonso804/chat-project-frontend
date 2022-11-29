@@ -61,13 +61,13 @@ const Menu: React.FC<MenuProps> = ({
 
         <div className="p-2 overflow-y-scroll max-h-[calc(100%-165px)] scrollbar">
           {messages?.map((message, idx) => (
-            <MessagePreview
-              key={idx}
-              receiver={message.receiver}
-              message={message.message}
-              date={message.date}
-              onClick={(receiver) => setReceiver(receiver)}
-            />
+            <div key={idx} onClick={() => setReceiver(message.receiver)}>
+              <MessagePreview
+                receiver={message.receiver}
+                message={message.message}
+                date={message.date}
+              />
+            </div>
           ))}
         </div>
       </section>

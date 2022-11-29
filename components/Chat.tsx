@@ -1,7 +1,6 @@
 import Message from "containers/Message";
 import { getCookie } from "cookies-next";
 import Image from "next/image";
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { MdSend } from "react-icons/md";
 import { UserPreview } from "schemas/userPreview.schema";
@@ -28,34 +27,21 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
     CreateChatSocketResponse["message"][]
   >([]);
   const [chatId, setChatId] = useState<string | undefined>();
-  const router = useRouter();
-
-  const getChat = async () => {
-    const token = getCookie("token") as string;
-
-    try {
-      const response = await ChatServices.getChat(token, receiver.username);
-
-      if (response.status !== 200) {
-        setChatId(undefined);
-        setMessages([]);
-
-        return;
-      }
-
-      const data = await response.json();
-
-      setChatId(data.id);
-      setMessages(data.messages);
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
   useEffect(() => {
-    const createChat = ({ chatId, message }: CreateChatSocketResponse) => {
-      setChatId(chatId);
-      setMessages([message, ...messages]);
+    const createChat = ({
+      chatId: serverChatId,
+      message,
+    }: CreateChatSocketResponse) => {
+      console.group("createChat");
+      console.log(`chatId: ${chatId}`);
+      console.log(`serverChatId: ${serverChatId}`);
+      console.log(`message: ${message}`);
+      console.groupEnd();
+      if (!chatId || chatId === serverChatId) {
+        setChatId(serverChatId);
+        setMessages([message, ...messages]);
+      }
     };
 
     socket.on("newChat", createChat);
@@ -66,9 +52,19 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
   }, [messages, chatId, socket]);
 
   useEffect(() => {
-    const sendMessage = ({ chatId, message }: CreateChatSocketResponse) => {
-      setChatId(chatId);
-      setMessages([message, ...messages]);
+    const sendMessage = ({
+      chatId: serverChatId,
+      message,
+    }: CreateChatSocketResponse) => {
+      console.group("sendMessage");
+      console.log(`chatId: ${chatId}`);
+      console.log(`serverChatId: ${serverChatId}`);
+      console.log(`message: ${message}`);
+      console.groupEnd();
+      if (chatId === serverChatId) {
+        setChatId(serverChatId);
+        setMessages([message, ...messages]);
+      }
     };
 
     socket.on("sendMessage", sendMessage);
@@ -88,27 +84,43 @@ const Chat: React.FC<ChatProps> = ({ receiver, socket }) => {
           message: newMessage,
           receiver,
         });
-        // await ChatServices.sendMessage(token as string, chatId, newMessage);
       } else {
         socket.emit("createChat", {
           receiver,
           message: newMessage,
         });
-        // await ChatServices.createChat(token as string, receiver, newMessage);
       }
       setNewMessage("");
-      // await getChat();
     } catch (error) {
       console.log(error);
     }
   };
 
   useEffect(() => {
-    if (router.isReady) {
-      getChat();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.isReady, router.query.username, receiver]);
+    const getChat = async () => {
+      const token = getCookie("token") as string;
+
+      try {
+        const response = await ChatServices.getChat(token, receiver.username);
+
+        if (response.status !== 200) {
+          setChatId(undefined);
+          setMessages([]);
+
+          return;
+        }
+
+        const data = await response.json();
+
+        setChatId(data.id);
+        setMessages(data.messages);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    getChat();
+  }, [receiver]);
 
   return (
     <>
