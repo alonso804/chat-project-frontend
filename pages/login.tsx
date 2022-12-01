@@ -24,6 +24,7 @@ const Login: NextPage = () => {
   const resetStates = () => {
     setGoogleAuth(false);
     setGoogleAuthSecret("");
+    setJwtToken("");
   };
 
   return (
